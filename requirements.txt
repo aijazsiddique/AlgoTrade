@@ -1,0 +1,11 @@
+flask
+flask-sqlalchemy
+flask-migrate
+flask-login
+flask-wtf
+flask-bcrypt
+email-validator
+openalgo  # Make sure to use the correct version
+pandas
+numpy
+werkzeug

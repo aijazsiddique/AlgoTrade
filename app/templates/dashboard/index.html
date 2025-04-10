@@ -1,0 +1,226 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h3 fw-bold mb-0">
+            <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+        </h1>
+        <p class="text-muted">Welcome to your AlgoTrade dashboard!</p>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4 g-3">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col me-2">
+                        <div class="text-xs fw-bold text-primary text-uppercase mb-1">
+                            Total Strategies
+                        </div>
+                        <div class="h3 mb-0 fw-bold">{{ strategies_count }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-cogs fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col me-2">
+                        <div class="text-xs fw-bold text-success text-uppercase mb-1">
+                            Active Instances
+                        </div>
+                        <div class="h3 mb-0 fw-bold">{{ active_instances }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-robot fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if account_info %}
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col me-2">
+                        <div class="text-xs fw-bold text-info text-uppercase mb-1">
+                            Available Cash
+                        </div>
+                        <div class="h3 mb-0 fw-bold">₹ {{ account_info.funds.availablecash }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-rupee-sign fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col me-2">
+                        <div class="text-xs fw-bold text-warning text-uppercase mb-1">
+                            Open Positions
+                        </div>
+                        <div class="h3 mb-0 fw-bold">{{ account_info.positions_count }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-xl-6 col-md-12 mb-4">
+        <div class="card shadow">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <i class="fas fa-exclamation-circle fa-2x text-warning"></i>
+                    </div>
+                    <div>
+                        <h5 class="mb-1">API Key Not Configured</h5>
+                        <p class="mb-0">Please add your OpenAlgo API key in your profile to view account information.</p>
+                    </div>
+                    <div class="ms-auto">
+                        <a href="{{ url_for('auth.profile') }}" class="btn btn-sm btn-warning">Configure</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Main Content Sections -->
+<div class="row g-3">
+    <!-- Strategies Section -->
+    <div class="col-lg-8">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 fw-bold">My Strategies</h6>
+                <a href="{{ url_for('strategy.create_strategy') }}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-plus-circle me-1"></i> Create New
+                </a>
+            </div>
+            <div class="card-body">
+                {% if strategies_count > 0 %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-borderless align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Instances</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- This would ideally be populated from a query in the controller -->
+                            <tr>
+                                <td>EMA Crossover Strategy</td>
+                                <td>3</td>
+                                <td><span class="badge bg-success">2 Active</span></td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="#" class="btn btn-outline-primary">View</a>
+                                        <a href="#" class="btn btn-outline-secondary">Edit</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-end">
+                    <a href="{{ url_for('strategy.list_strategies') }}" class="btn btn-sm btn-link">View All Strategies</a>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-cogs fa-3x mb-3 text-gray-300"></i>
+                    <h5>No Strategies Yet</h5>
+                    <p class="mb-3">Create your first algorithmic trading strategy to get started</p>
+                    <a href="{{ url_for('strategy.create_strategy') }}" class="btn btn-primary">
+                        <i class="fas fa-plus-circle me-1"></i> Create First Strategy
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions Section -->
+    <div class="col-lg-4 quick-actions">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 fw-bold">Quick Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('strategy.create_strategy') }}" class="btn btn-primary">
+                        <i class="fas fa-plus-circle me-1"></i> New Strategy
+                    </a>
+                    <a href="{{ url_for('dashboard.positions') }}" class="btn btn-success">
+                        <i class="fas fa-chart-line me-1"></i> View Positions
+                    </a>
+                    <a href="{{ url_for('dashboard.orders') }}" class="btn btn-info text-white">
+                        <i class="fas fa-list-alt me-1"></i> View Orders
+                    </a>
+                    <a href="{{ url_for('dashboard.holdings') }}" class="btn btn-secondary">
+                        <i class="fas fa-wallet me-1"></i> View Holdings
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Summary -->
+        {% if account_info %}
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 fw-bold">Account Summary</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Available Cash:</span>
+                        <span class="fw-bold">₹ {{ account_info.funds.availablecash }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">Collateral:</span>
+                        <span class="fw-bold">₹ {{ account_info.funds.collateral }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">M2M Unrealized:</span>
+                        <span class="fw-bold">₹ {{ account_info.funds.m2munrealized }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">M2M Realized:</span>
+                        <span class="fw-bold">₹ {{ account_info.funds.m2mrealized }}</span>
+                    </div>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('dashboard.positions') }}" class="btn btn-sm btn-outline-primary">Positions</a>
+                    <a href="{{ url_for('dashboard.orders') }}" class="btn btn-sm btn-outline-primary">Orders</a>
+                    <a href="{{ url_for('dashboard.holdings') }}" class="btn btn-sm btn-outline-primary">Holdings</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

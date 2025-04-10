@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - AlgoTrade Platform</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- CodeMirror for code editor -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    {% block styles %}{% endblock %}
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Sidebar -->
+        {% if current_user.is_authenticated %}
+        <nav id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <a href="{{ url_for('dashboard.index') }}" class="d-flex align-items-center text-decoration-none">
+                    <i class="fas fa-chart-line fs-2 me-2"></i>
+                    <h3 class="mb-0">AlgoTrade</h3>
+                </a>
+            </div>
+
+            <div class="sidebar-user">
+                <div class="user-info text-center">
+                    <i class="fas fa-user-circle user-avatar"></i>
+                    <div class="user-name">{{ current_user.username }}</div>
+                    <div class="user-role">Trader</div>
+                </div>
+            </div>
+
+            <ul class="sidebar-nav">
+                <li class="sidebar-item">
+                    <a href="{{ url_for('dashboard.index') }}" class="sidebar-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                
+                <li class="sidebar-header">Trading Management</li>
+                
+                <li class="sidebar-item">
+                    <a href="{{ url_for('strategy.list_strategies') }}" class="sidebar-link {% if 'strategy.list_strategies' in request.endpoint %}active{% endif %}">
+                        <i class="fas fa-cogs"></i>
+                        <span>Strategies</span>
+                    </a>
+                </li>
+                
+                <li class="sidebar-item">
+                    <a href="#tradingSubmenu" data-bs-toggle="collapse" class="sidebar-link collapsed">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Trading Account</span>
+                        <i class="fas fa-angle-down ms-auto submenu-icon"></i>
+                    </a>
+                    <ul class="collapse sidebar-submenu" id="tradingSubmenu">
+                        <li>
+                            <a href="{{ url_for('dashboard.positions') }}" class="sidebar-link {% if request.endpoint == 'dashboard.positions' %}active{% endif %}">
+                                <i class="fas fa-chart-line"></i> Positions
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('dashboard.orders') }}" class="sidebar-link {% if request.endpoint == 'dashboard.orders' %}active{% endif %}">
+                                <i class="fas fa-list-alt"></i> Orders
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('dashboard.trades') }}" class="sidebar-link {% if request.endpoint == 'dashboard.trades' %}active{% endif %}">
+                                <i class="fas fa-exchange-alt"></i> Trades
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('dashboard.holdings') }}" class="sidebar-link {% if request.endpoint == 'dashboard.holdings' %}active{% endif %}">
+                                <i class="fas fa-wallet"></i> Holdings
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                
+                <li class="sidebar-header">User Management</li>
+                
+                <li class="sidebar-item">
+                    <a href="{{ url_for('auth.profile') }}" class="sidebar-link {% if request.endpoint == 'auth.profile' %}active{% endif %}">
+                        <i class="fas fa-user-cog"></i>
+                        <span>Profile Settings</span>
+                    </a>
+                </li>
+                
+                <li class="sidebar-item">
+                    <a href="{{ url_for('auth.logout') }}" class="sidebar-link">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </a>
+                </li>
+            </ul>
+            
+            <div class="sidebar-footer">
+                <div>AlgoTrade Platform &copy; 2025</div>
+            </div>
+        </nav>
+        {% endif %}
+
+        <!-- Content Area -->
+        <div class="content {% if not current_user.is_authenticated %}full-width{% endif %}" style="background-color: #F3EEEA;">
+            <!-- Top Navbar -->
+            <nav class="navbar navbar-expand-lg navbar-light bg-white top-navbar">
+                <div class="container-fluid">
+                    {% if current_user.is_authenticated %}
+                    <button type="button" id="sidebarCollapse" class="navbar-btn">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    {% else %}
+                    <a class="navbar-brand" href="{{ url_for('dashboard.index') }}">
+                        <i class="fas fa-chart-line me-2"></i> AlgoTrade
+                    </a>
+                    {% endif %}
+                    
+                    <div class="d-flex ms-auto">
+                        {% if current_user.is_authenticated %}
+                        <div class="dropdown">
+                            <div class="nav-profile dropdown-toggle" id="profileDropdown" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-circle me-1"></i>
+                                <span class="d-none d-md-inline">{{ current_user.username }}</span>
+                            </div>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+                                <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">Profile</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a></li>
+                            </ul>
+                        </div>
+                        {% else %}
+                        <div class="navbar-nav">
+                            <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>
+                            <a class="nav-link" href="{{ url_for('auth.register') }}">Register</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <main class="main-content">
+                <div class="container-fluid">
+                    <!-- Flash Messages -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }} alert-dismissible fade show">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    
+                    <!-- Page Content -->
+                    {% block content %}{% endblock %}
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- CodeMirror JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

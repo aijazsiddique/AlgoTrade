@@ -1,0 +1,319 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h3">
+            <i class="fas fa-plus-circle"></i> Create Strategy Instance
+        </h1>
+        <p class="text-muted">
+            Creating instance for: <strong>{{ strategy.name }}</strong>
+        </p>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('strategy.view_strategy', strategy_id=strategy.id) }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Strategy
+        </a>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-body">
+        <form method="POST" action="">
+            {{ form.hidden_tag() }}
+            
+            <!-- Basic Information -->
+            <h5 class="mb-3">Basic Information</h5>
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        {{ form.name.label(class="form-label") }}
+                        {% if form.name.errors %}
+                            {{ form.name(class="form-control is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.name.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.name(class="form-control") }}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        {{ form.description.label(class="form-label") }}
+                        {% if form.description.errors %}
+                            {{ form.description(class="form-control is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.description.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.description(class="form-control", rows=1) }}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Instrument Settings -->
+            <h5 class="mb-3">Instrument Settings</h5>
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        {{ form.symbol.label(class="form-label") }}
+                        {% if form.symbol.errors %}
+                            {{ form.symbol(class="form-control is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.symbol.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.symbol(class="form-control") }}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        {{ form.exchange.label(class="form-label") }}
+                        {% if form.exchange.errors %}
+                            {{ form.exchange(class="form-control is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.exchange.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.exchange(class="form-control") }}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        {{ form.timeframe.label(class="form-label") }}
+                        {% if form.timeframe.errors %}
+                            {{ form.timeframe(class="form-control is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.timeframe.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.timeframe(class="form-control") }}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Strategy Parameters -->
+            <h5 class="mb-3">Strategy Parameters</h5>
+            <div class="row mb-4" id="parameters-container">
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> Loading parameters...</h6>
+                        <p>Parameters will be loaded from the strategy code.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Signal Actions -->
+            <h5 class="mb-3">Signal Actions</h5>
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        {{ form.long_entry_action.label(class="form-label") }}
+                        {% if form.long_entry_action.errors %}
+                            {{ form.long_entry_action(class="form-control is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.long_entry_action.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.long_entry_action(class="form-control", rows=3) }}
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            Action to take on long entry signals (e.g., "BUY NIFTY 18000 CE")
+                        </small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        {{ form.long_exit_action.label(class="form-label") }}
+                        {% if form.long_exit_action.errors %}
+                            {{ form.long_exit_action(class="form-control is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.long_exit_action.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.long_exit_action(class="form-control", rows=3) }}
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            Action to take on long exit signals (e.g., "SELL NIFTY 18000 CE")
+                        </small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        {{ form.short_entry_action.label(class="form-label") }}
+                        {% if form.short_entry_action.errors %}
+                            {{ form.short_entry_action(class="form-control is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.short_entry_action.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.short_entry_action(class="form-control", rows=3) }}
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            Action to take on short entry signals (e.g., "BUY NIFTY 18000 PE")
+                        </small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        {{ form.short_exit_action.label(class="form-label") }}
+                        {% if form.short_exit_action.errors %}
+                            {{ form.short_exit_action(class="form-control is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.short_exit_action.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.short_exit_action(class="form-control", rows=3) }}
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            Action to take on short exit signals (e.g., "SELL NIFTY 18000 PE")
+                        </small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Position Sizing and Risk Management -->
+            <h5 class="mb-3">Position Sizing and Risk Management</h5>
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        {{ form.position_size.label(class="form-label") }}
+                        {% if form.position_size.errors %}
+                            {{ form.position_size(class="form-control is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.position_size.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.position_size(class="form-control") }}
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            Percentage of capital to allocate (e.g., 5 = 5% of capital)
+                        </small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3 mt-4">
+                        <div class="form-check form-switch">
+                            {{ form.intraday(class="form-check-input") }}
+                            {{ form.intraday.label(class="form-check-label") }}
+                        </div>
+                        <small class="form-text text-muted">
+                            If enabled, positions will be squared off at the end of the day
+                        </small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="d-grid">
+                {{ form.submit(class="btn btn-primary") }}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Load strategy parameters
+        fetch(`/strategies/{{ strategy.id }}/test`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({})
+        })
+        .then(response => response.json())
+        .then(data => {
+            const parametersContainer = document.getElementById('parameters-container');
+            
+            if (data.success && data.parameters && Object.keys(data.parameters).length > 0) {
+                let paramsHtml = '';
+                
+                for (const [key, value] of Object.entries(data.parameters)) {
+                    const paramId = `param_${key}`;
+                    let inputValue = value;
+                    let inputType = 'text';
+                    
+                    // Determine input type based on parameter value
+                    if (typeof value === 'number') {
+                        if (Number.isInteger(value)) {
+                            inputType = 'number';
+                            inputValue = parseInt(value);
+                        } else {
+                            inputType = 'number';
+                            inputValue = parseFloat(value);
+                        }
+                    } else if (typeof value === 'boolean') {
+                        inputType = 'checkbox';
+                    }
+                    
+                    paramsHtml += `
+                        <div class="col-md-4 mb-3">
+                            <label for="${paramId}" class="form-label">${key}</label>
+                            ${inputType === 'checkbox' 
+                                ? `<div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="${paramId}" name="${paramId}" ${value ? 'checked' : ''}>
+                                   </div>`
+                                : `<input type="${inputType}" class="form-control" id="${paramId}" name="${paramId}" value="${inputValue}" step="${inputType === 'number' && !Number.isInteger(value) ? '0.01' : '1'}">`
+                            }
+                            <small class="form-text text-muted">Default: ${value}</small>
+                        </div>
+                    `;
+                }
+                
+                parametersContainer.innerHTML = paramsHtml;
+            } else {
+                parametersContainer.innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle"></i> No Parameters Found</h6>
+                            <p>This strategy doesn't have any customizable parameters.</p>
+                        </div>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            const parametersContainer = document.getElementById('parameters-container');
+            parametersContainer.innerHTML = `
+                <div class="col-12">
+                    <div class="alert alert-danger">
+                        <h6><i class="fas fa-exclamation-triangle"></i> Error Loading Parameters</h6>
+                        <p>Could not load strategy parameters. Please try again.</p>
+                    </div>
+                </div>
+            `;
+            console.error('Error loading parameters:', error);
+        });
+    });
+</script>
+{% endblock %}

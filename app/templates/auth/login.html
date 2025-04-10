@@ -1,0 +1,83 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-5">
+            <div class="card o-hidden border-0 shadow-lg my-5">
+                <div class="card-body p-0">
+                    <div class="p-5">
+                        <div class="text-center mb-4">
+                            <h1 class="h4 text-gray-900 mb-2">Welcome Back!</h1>
+                            <p class="text-muted">Enter your credentials to access your account</p>
+                        </div>
+                        
+                        <form method="POST" action="" class="user">
+                            {{ form.hidden_tag() }}
+                            
+                            <div class="mb-3">
+                                {{ form.email.label(class="form-label") }}
+                                {% if form.email.errors %}
+                                    {{ form.email(class="form-control form-control-user is-invalid") }}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.email.errors %}
+                                            <span>{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    {{ form.email(class="form-control form-control-user", placeholder="Enter Email Address...") }}
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                {{ form.password.label(class="form-label") }}
+                                {% if form.password.errors %}
+                                    {{ form.password(class="form-control form-control-user is-invalid") }}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.password.errors %}
+                                            <span>{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    {{ form.password(class="form-control form-control-user", placeholder="Password") }}
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3 form-check">
+                                {{ form.remember(class="form-check-input") }}
+                                {{ form.remember.label(class="form-check-label") }}
+                            </div>
+                            
+                            <div class="d-grid mb-3">
+                                {{ form.submit(class="btn btn-primary btn-user btn-block") }}
+                            </div>
+                        </form>
+                        
+                        <hr>
+                        
+                        <div class="text-center">
+                            <div class="small">Need an account?</div>
+                            <a href="{{ url_for('auth.register') }}" class="fw-bold">Create an Account!</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .form-control-user {
+        border-radius: 10rem;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+    
+    .btn-user {
+        border-radius: 10rem;
+        padding: 0.75rem 1rem;
+    }
+</style>
+{% endblock %}

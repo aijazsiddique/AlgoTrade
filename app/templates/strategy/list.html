@@ -1,0 +1,92 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h3">
+            <i class="fas fa-cogs"></i> My Strategies
+        </h1>
+        <p class="text-muted">Manage your trading strategies</p>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('strategy.create_strategy') }}" class="btn btn-primary">
+            <i class="fas fa-plus-circle"></i> Create New Strategy
+        </a>
+    </div>
+</div>
+
+{% if strategies %}
+<div class="row">
+    {% for strategy in strategies %}
+    <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">{{ strategy.name }}</h5>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-light" data-bs-toggle="dropdown">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <a href="{{ url_for('strategy.view_strategy', strategy_id=strategy.id) }}" class="dropdown-item">
+                                <i class="fas fa-eye"></i> View Details
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('strategy.edit_strategy', strategy_id=strategy.id) }}" class="dropdown-item">
+                                <i class="fas fa-edit"></i> Edit Strategy
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a href="{{ url_for('strategy.create_instance', strategy_id=strategy.id) }}" class="dropdown-item">
+                                <i class="fas fa-plus-circle"></i> Create Instance
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form action="{{ url_for('strategy.delete_strategy', strategy_id=strategy.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this strategy and all its instances?');">
+                                <button type="submit" class="dropdown-item text-danger">
+                                    <i class="fas fa-trash"></i> Delete Strategy
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    {% if strategy.description %}
+                    {{ strategy.description }}
+                    {% else %}
+                    <span class="text-muted fst-italic">No description provided</span>
+                    {% endif %}
+                </p>
+                
+                <p class="mb-0">
+                    <span class="badge bg-info">{{ strategy.instances|length }} instance(s)</span>
+                    <span class="badge bg-success">{{ strategy.instances|selectattr('is_active', 'equalto', true)|list|length }} active</span>
+                </p>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">Created: {{ strategy.created_at.strftime('%Y-%m-%d') }}</small>
+                <a href="{{ url_for('strategy.view_strategy', strategy_id=strategy.id) }}" class="btn btn-sm btn-outline-primary float-end">
+                    View Details
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card shadow">
+    <div class="card-body text-center py-5">
+        <h4 class="mb-3">You don't have any strategies yet</h4>
+        <p class="text-muted">Create your first strategy to start building your automated trading system.</p>
+        <a href="{{ url_for('strategy.create_strategy') }}" class="btn btn-primary">
+            <i class="fas fa-plus-circle"></i> Create First Strategy
+        </a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,155 @@
+{% extends "layout.html" %}
+
+{% block styles %}
+<style>
+    .CodeMirror {
+        height: 500px;
+        border: 1px solid #ddd;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h3">
+            <i class="fas fa-plus-circle"></i> Create New Strategy
+        </h1>
+        <p class="text-muted">Define your base trading strategy logic</p>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-body">
+        <form method="POST" action="">
+            {{ form.hidden_tag() }}
+            
+            <div class="mb-3">
+                {{ form.name.label(class="form-label") }}
+                {% if form.name.errors %}
+                    {{ form.name(class="form-control is-invalid") }}
+                    <div class="invalid-feedback">
+                        {% for error in form.name.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {{ form.name(class="form-control") }}
+                {% endif %}
+            </div>
+            
+            <div class="mb-3">
+                {{ form.description.label(class="form-label") }}
+                {% if form.description.errors %}
+                    {{ form.description(class="form-control is-invalid") }}
+                    <div class="invalid-feedback">
+                        {% for error in form.description.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {{ form.description(class="form-control", rows=3) }}
+                {% endif %}
+            </div>
+            
+            <div class="mb-3">
+                {{ form.code.label(class="form-label") }}
+                <div class="mb-2">
+                    <button type="button" id="insert-template" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-file-code"></i> Insert Template
+                    </button>
+                </div>
+                {% if form.code.errors %}
+                    {{ form.code(class="form-control is-invalid", rows=20, id="code-editor") }}
+                    <div class="invalid-feedback">
+                        {% for error in form.code.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {{ form.code(class="form-control", rows=20, id="code-editor") }}
+                {% endif %}
+                <small class="form-text text-muted">
+                    Write your strategy code here. Use the following functions to generate signals:
+                    <ul>
+                        <li><code>long_entry()</code> - Generate long entry signal</li>
+                        <li><code>long_exit()</code> - Generate long exit signal</li>
+                        <li><code>short_entry()</code> - Generate short entry signal</li>
+                        <li><code>short_exit()</code> - Generate short exit signal</li>
+                    </ul>
+                    To define parameters, add a <code># param:</code> comment before variable assignments.
+                </small>
+            </div>
+            
+            <div class="d-grid">
+                {{ form.submit(class="btn btn-primary") }}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize CodeMirror
+        const codeEditor = CodeMirror.fromTextArea(document.getElementById('code-editor'), {
+            mode: 'python',
+            theme: 'dracula',
+            lineNumbers: true,
+            indentUnit: 4,
+            lineWrapping: true,
+            autoCloseBrackets: true,
+            matchBrackets: true
+        });
+        
+        // Template insertion
+        document.getElementById('insert-template').addEventListener('click', function() {
+            const template = `# EMA Crossover Strategy
+# This strategy generates signals based on EMA crossovers
+
+import numpy as np
+import pandas as pd
+
+# Define parameters (will be customizable in instances)
+# param:
+slow_ema = 50  # Slow EMA period
+# param:
+fast_ema = 20  # Fast EMA period
+
+def run_strategy(df):
+    """
+    Main strategy function
+    df: DataFrame with OHLC data
+    """
+    # Calculate EMAs
+    df['slow_ema'] = df['close'].ewm(span=slow_ema, adjust=False).mean()
+    df['fast_ema'] = df['close'].ewm(span=fast_ema, adjust=False).mean()
+    
+    # Previous EMAs for comparison
+    df['slow_ema_prev'] = df['slow_ema'].shift(1)
+    df['fast_ema_prev'] = df['fast_ema'].shift(1)
+    
+    # Generate signals
+    for i in range(1, len(df)):
+        # Check for crossover (fast crosses above slow)
+        if df['fast_ema_prev'].iloc[i] <= df['slow_ema_prev'].iloc[i] and df['fast_ema'].iloc[i] > df['slow_ema'].iloc[i]:
+            long_entry()
+        
+        # Check for crossunder (fast crosses below slow)
+        elif df['fast_ema_prev'].iloc[i] >= df['slow_ema_prev'].iloc[i] and df['fast_ema'].iloc[i] < df['slow_ema'].iloc[i]:
+            short_entry()
+    
+    return df
+
+# Execute the strategy if historical data is provided
+if historical_data is not None:
+    result = run_strategy(historical_data)
+    print(f"Strategy executed with parameters: slow_ema={slow_ema}, fast_ema={fast_ema}")
+    print(f"Generated {len(signals)} signals")
+`;
+            codeEditor.setValue(template);
+        });
+    });
+</script>
+{% endblock %}

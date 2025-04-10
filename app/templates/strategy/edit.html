@@ -1,0 +1,107 @@
+{% extends "layout.html" %}
+
+{% block styles %}
+<style>
+    .CodeMirror {
+        height: 500px;
+        border: 1px solid #ddd;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h3">
+            <i class="fas fa-edit"></i> Edit Strategy
+        </h1>
+        <p class="text-muted">Editing strategy: {{ strategy.name }}</p>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('strategy.view_strategy', strategy_id=strategy.id) }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Strategy
+        </a>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-body">
+        <form method="POST" action="">
+            {{ form.hidden_tag() }}
+            
+            <div class="mb-3">
+                {{ form.name.label(class="form-label") }}
+                {% if form.name.errors %}
+                    {{ form.name(class="form-control is-invalid") }}
+                    <div class="invalid-feedback">
+                        {% for error in form.name.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {{ form.name(class="form-control") }}
+                {% endif %}
+            </div>
+            
+            <div class="mb-3">
+                {{ form.description.label(class="form-label") }}
+                {% if form.description.errors %}
+                    {{ form.description(class="form-control is-invalid") }}
+                    <div class="invalid-feedback">
+                        {% for error in form.description.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {{ form.description(class="form-control", rows=3) }}
+                {% endif %}
+            </div>
+            
+            <div class="mb-3">
+                {{ form.code.label(class="form-label") }}
+                {% if form.code.errors %}
+                    {{ form.code(class="form-control is-invalid", rows=20, id="code-editor") }}
+                    <div class="invalid-feedback">
+                        {% for error in form.code.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {{ form.code(class="form-control", rows=20, id="code-editor") }}
+                {% endif %}
+                <small class="form-text text-muted">
+                    Use the following functions to generate signals:
+                    <ul>
+                        <li><code>long_entry()</code> - Generate long entry signal</li>
+                        <li><code>long_exit()</code> - Generate long exit signal</li>
+                        <li><code>short_entry()</code> - Generate short entry signal</li>
+                        <li><code>short_exit()</code> - Generate short exit signal</li>
+                    </ul>
+                    To define parameters, add a <code># param:</code> comment before variable assignments.
+                </small>
+            </div>
+            
+            <div class="d-grid">
+                {{ form.submit(class="btn btn-primary") }}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize CodeMirror
+        const codeEditor = CodeMirror.fromTextArea(document.getElementById('code-editor'), {
+            mode: 'python',
+            theme: 'dracula',
+            lineNumbers: true,
+            indentUnit: 4,
+            lineWrapping: true,
+            autoCloseBrackets: true,
+            matchBrackets: true
+        });
+    });
+</script>
+{% endblock %}
