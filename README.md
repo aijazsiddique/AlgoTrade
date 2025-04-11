@@ -39,7 +39,7 @@ algotrade/
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/your-username/algotrade.git
+git clone https://github.com/aijazsiddique/algotrade.git
 cd algotrade
 ```
 
@@ -64,7 +64,7 @@ python init_db.py
 python app.py
 ```
 
-6. Open your browser and navigate to `http://localhost:5000`
+6. Open your browser and navigate to `http://localhost:5003`
 
 ## Default Credentials
 
