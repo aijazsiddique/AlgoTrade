@@ -26,7 +26,7 @@
 
 <div class="card shadow">
     <div class="card-body">
-        <form method="POST" action="">
+        <form method="POST" action="" id="strategy-form">
             {{ form.hidden_tag() }}
             
             <div class="mb-3">
@@ -69,6 +69,9 @@
                 {% else %}
                     {{ form.code(class="form-control", rows=20, id="code-editor") }}
                 {% endif %}
+                <div id="code-error" class="invalid-feedback" style="display: none;">
+                    Strategy code is required.
+                </div>
                 <small class="form-text text-muted">
                     Use the following functions to generate signals:
                     <ul>
@@ -101,6 +104,26 @@
             lineWrapping: true,
             autoCloseBrackets: true,
             matchBrackets: true
+        });
+        
+        // Handle form submission with validation
+        const form = document.getElementById('strategy-form');
+        form.addEventListener('submit', function(e) {
+            // Get the current value from CodeMirror
+            const value = codeEditor.getValue();
+            
+            // Update the textarea
+            codeEditor.save();
+            
+            // Validate that we have code
+            if (!value || value.trim() === '') {
+                e.preventDefault(); // Stop form submission
+                document.getElementById('code-error').style.display = 'block';
+                return false;
+            } else {
+                document.getElementById('code-error').style.display = 'none';
+                return true;
+            }
         });
     });
 </script>

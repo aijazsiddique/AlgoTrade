@@ -21,6 +21,11 @@ def list_strategies():
 def create_strategy():
     form = StrategyForm()
     if form.validate_on_submit():
+        # Manual validation for code field since we removed the DataRequired validator
+        if not form.code.data or not form.code.data.strip():
+            flash("Strategy code is required", "danger")
+            return render_template('strategy/create.html', title='Create Strategy', form=form)
+            
         # Check if strategy code can be executed
         test_result = execute_strategy_code(form.code.data)
         if not test_result['success']:
@@ -72,6 +77,11 @@ def edit_strategy(strategy_id):
     form = StrategyForm()
     
     if form.validate_on_submit():
+        # Manual validation for code field since we removed the DataRequired validator
+        if not form.code.data or not form.code.data.strip():
+            flash("Strategy code is required", "danger")
+            return render_template('strategy/edit.html', title='Edit Strategy', form=form, strategy=strategy)
+            
         # Check if strategy code can be executed
         test_result = execute_strategy_code(form.code.data)
         if not test_result['success']:

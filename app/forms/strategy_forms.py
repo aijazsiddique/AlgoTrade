@@ -7,8 +7,7 @@ class StrategyForm(FlaskForm):
                        validators=[DataRequired(), Length(min=2, max=100)])
     description = TextAreaField('Description', 
                               validators=[Optional(), Length(max=500)])
-    code = TextAreaField('Strategy Code', 
-                         validators=[DataRequired()])
+    code = TextAreaField('Strategy Code') 
     submit = SubmitField('Save Strategy')
 
 class StrategyInstanceForm(FlaskForm):
