@@ -119,6 +119,9 @@ The platform comes with a demo EMA crossover strategy. Here's how it works:
 2. It generates signals based on crossovers:
    - When fast EMA crosses above slow EMA → Long entry signal
    - When fast EMA crosses below slow EMA → Short entry signal
+  
+## Warning
+*** Don't Use this app for any kind of Buy Sell in Live Market . Its totally a experimental product only for educational purpose ..Please see issues first before running..
 
 ## License
 
