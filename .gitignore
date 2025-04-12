@@ -22,20 +22,37 @@ var/
 .installed.cfg
 *.egg
 
-# Database
+# Flask
 instance/
+.webassets-cache
+
+# SQLite database files
 *.db
-*.db-journal
+*.sqlite3
+*.sqlite
 
-# Virtual Environment
-env/
+# Environment variables
+.env
+.venv
+.flaskenv
 
-# IDE
+# IDE specific files
 .idea/
 .vscode/
 *.swp
 *.swo
-
-# OS specific
 .DS_Store
-Thumbs.db
+
+# Log files
+*.log
+logs/
+
+# Project specific
+migrations/versions/
+!migrations/versions/__init__.py
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Distribution / packaging
+.Python
