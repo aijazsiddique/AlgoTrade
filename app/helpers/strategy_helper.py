@@ -128,11 +128,13 @@ def execute_strategy_code(code, historical_data=None, params=None, strategy_name
 
 def get_historical_data(user, symbol, exchange, timeframe, start_date=None, end_date=None):
     """
-    Fetch historical data from OpenAlgo
+    Fetch historical data from AngelOne
     Returns a pandas DataFrame with OHLC data
     """
     try:
-        client = get_openalgo_client(user)
+        # Import the function to get AngelOne client
+        from app.helpers.openalgo_helper import get_angelone_client
+        import requests
         
         # Log data request
         logger.log_strategy_event(
@@ -142,26 +144,126 @@ def get_historical_data(user, symbol, exchange, timeframe, start_date=None, end_
             f"Timeframe: {timeframe}, Start: {start_date}, End: {end_date}"
         )
         
-        # Get historical data
-        result = client.history(
-            symbol=symbol,
-            exchange=exchange,
-            interval=timeframe,
-            start_date=start_date,
-            end_date=end_date
+        # Create AngelOne SmartConnect client
+        client = get_angelone_client(user)
+        
+        # Map the timeframe to AngelOne's interval format
+        interval_map = {
+            '1min': 'ONE_MINUTE',
+            '3min': 'THREE_MINUTE',
+            '5min': 'FIVE_MINUTE', 
+            '10min': 'TEN_MINUTE',
+            '15min': 'FIFTEEN_MINUTE',
+            '30min': 'THIRTY_MINUTE',
+            '1hour': 'ONE_HOUR',
+            '1day': 'ONE_DAY'
+        }
+        
+        # Default to 1 day if timeframe not recognized
+        interval = interval_map.get(timeframe.lower(), 'ONE_DAY')
+        
+        # Get the token for the symbol from the symbol mapping
+        symbol_mapping = get_symbol_token_mapping(symbol, exchange)
+        symbol_token = symbol_mapping['token']
+        
+        # Determine from_date if not provided
+        from datetime import datetime, timedelta
+        if not start_date:
+            # For intervals less than or equal to 15 minutes, get data for 7 days
+            # For larger intervals, get data for 20 days
+            if interval in ['ONE_MINUTE', 'THREE_MINUTE', 'FIVE_MINUTE', 'TEN_MINUTE', 'FIFTEEN_MINUTE']:
+                start_date_obj = datetime.now() - timedelta(days=7)
+            else:
+                start_date_obj = datetime.now() - timedelta(days=20)
+                
+            # Use 9:15 AM as the starting time for all exchanges except MCX
+            if exchange == 'MCX':
+                start_date = start_date_obj.strftime("%Y-%m-%d 09:00")
+            else:
+                start_date = start_date_obj.strftime("%Y-%m-%d 09:15")
+        
+        # Determine to_date if not provided
+        if not end_date:
+            end_date = datetime.now().strftime("%Y-%m-%d %H:%M")
+        
+        # Prepare request payload for AngelOne API
+        payload = {
+            "exchange": exchange,
+            "symboltoken": symbol_token,
+            "interval": interval,
+            "fromdate": start_date,
+            "todate": end_date
+        }
+        
+        # Get the token for authentication
+        headers = {
+            'X-PrivateKey': user.angelone_api_key,
+            'Accept': 'application/json, application/json',
+            'X-SourceID': 'WEB, WEB',
+            'X-ClientLocalIP': '192.168.1.1',  # These are placeholder values 
+            'X-ClientPublicIP': '192.168.1.1',  # that could be configured in settings
+            'X-MACAddress': 'XX:XX:XX:XX:XX:XX',
+            'X-UserType': 'USER',
+            'Authorization': f'Bearer {user.angelone_jwt_token}',
+            'Content-Type': 'application/json'
+        }
+        
+        # Make the API call to AngelOne
+        response = requests.post(
+            'https://apiconnect.angelone.in/rest/secure/angelbroking/historical/v1/getCandleData',
+            json=payload,
+            headers=headers
         )
         
-        # Log result summary
-        data_points = len(result) if isinstance(result, pd.DataFrame) else 0
-        logger.log_strategy_event(
-            "DataFetch", 
-            f"{symbol}@{exchange}", 
-            "HISTORICAL_DATA_RECEIVED", 
-            f"Received {data_points} data points"
-        )
+        # Process response
+        if response.status_code == 200:
+            result = response.json()
+            if result.get('status') and result.get('data'):
+                # Convert data to pandas DataFrame
+                data = result['data']
+                df = pd.DataFrame(data, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+                
+                # Convert timestamp to datetime and set as index
+                df['timestamp'] = pd.to_datetime(df['timestamp'])
+                df.set_index('timestamp', inplace=True)
+                
+                # Convert string values to float
+                for col in ['open', 'high', 'low', 'close']:
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
+                
+                # Convert volume to integer
+                df['volume'] = pd.to_numeric(df['volume'], errors='coerce').astype('int64')
+                
+                # Log result summary
+                data_points = len(df)
+                logger.log_strategy_event(
+                    "DataFetch", 
+                    f"{symbol}@{exchange}", 
+                    "HISTORICAL_DATA_RECEIVED", 
+                    f"Received {data_points} data points"
+                )
+                
+                return df
+            else:
+                error_msg = result.get('message', 'Unknown error from AngelOne API')
+                logger.log_strategy_event(
+                    "DataFetch", 
+                    f"{symbol}@{exchange}", 
+                    "HISTORICAL_DATA_ERROR", 
+                    error_msg,
+                    "error"
+                )
+                raise ValueError(f"Error fetching historical data: {error_msg}")
+        else:
+            logger.log_strategy_event(
+                "DataFetch", 
+                f"{symbol}@{exchange}", 
+                "HISTORICAL_DATA_ERROR", 
+                f"HTTP Error: {response.status_code}, {response.text}",
+                "error"
+            )
+            raise ValueError(f"HTTP Error: {response.status_code}")
         
-        # The result should already be a pandas DataFrame based on OpenAlgo implementation
-        return result
     except Exception as e:
         # Log error
         logger.log_strategy_event(
@@ -252,12 +354,13 @@ def process_realtime_data(user_id, instance_id, symbol, exchange_type, token, st
     # Log strategy start
     strategy_name = instance.strategy.name
     instance_name = instance.name
+    timeframe = instance.timeframe
     
     logger.log_strategy_event(
         strategy_name, 
         instance_name, 
         "STARTED", 
-        f"Processing real-time data for {symbol} (User: {user.username})"
+        f"Processing real-time data for {symbol} with timeframe {timeframe} (User: {user.username})"
     )
     
     # Initialize variables
@@ -303,16 +406,25 @@ def process_realtime_data(user_id, instance_id, symbol, exchange_type, token, st
     
     # Try WebSocket first
     if use_websocket:
-        initial_data = get_realtime_data(symbol)
+        raw_data = get_realtime_data(symbol)
+        if not raw_data.empty:
+            # Resample the raw tick data to the requested timeframe
+            initial_data = resample_to_timeframe(raw_data, timeframe)
+            logger.log_strategy_event(
+                strategy_name, 
+                instance_name, 
+                "WEBSOCKET_DATA", 
+                f"Resampled {len(raw_data)} ticks to {len(initial_data)} {timeframe} candles"
+            )
     
-    # Fall back to OpenAlgo if WebSocket data is empty
+    # Fall back to AngelOne if WebSocket data is empty
     if initial_data is None or initial_data.empty:
         try:
             logger.log_strategy_event(
                 strategy_name, 
                 instance_name, 
                 "INITIAL_DATA", 
-                f"Getting initial data from OpenAlgo API for {symbol}"
+                f"Getting initial data from AngelOne API for {symbol}"
             )
             
             initial_data = get_historical_data(
@@ -332,7 +444,7 @@ def process_realtime_data(user_id, instance_id, symbol, exchange_type, token, st
                 "error"
             )
     
-    current_data = initial_data.copy() if not initial_data is None and not initial_data.empty else pd.DataFrame()
+    current_data = initial_data.copy() if initial_data is not None and not initial_data.empty else pd.DataFrame()
     
     # Log data status
     if current_data.empty:
@@ -348,7 +460,7 @@ def process_realtime_data(user_id, instance_id, symbol, exchange_type, token, st
             strategy_name, 
             instance_name, 
             "DATA_READY", 
-            f"Initial data loaded with {len(current_data)} data points"
+            f"Initial data loaded with {len(current_data)} {timeframe} candles"
         )
     
     # Main processing loop
@@ -358,20 +470,22 @@ def process_realtime_data(user_id, instance_id, symbol, exchange_type, token, st
             
             # Try WebSocket first if available
             if use_websocket:
-                new_data = get_realtime_data(symbol)
+                raw_data = get_realtime_data(symbol)
                 
-                # If we got data from WebSocket, append/merge with current data
-                if not new_data.empty:
+                # If we got data from WebSocket, resample it to the required timeframe
+                if not raw_data.empty:
+                    new_data = resample_to_timeframe(raw_data, timeframe)
+                    
                     if current_data.empty:
                         current_data = new_data
                         logger.log_strategy_event(
                             strategy_name, 
                             instance_name, 
                             "DATA_UPDATE", 
-                            f"Received initial WebSocket data with {len(new_data)} points"
+                            f"Received initial WebSocket data with {len(new_data)} {timeframe} candles"
                         )
                     else:
-                        # Append new data and remove duplicates
+                        # Merge with current data, keeping only the latest values for each timestamp
                         current_data = pd.concat([current_data, new_data])
                         current_data = current_data[~current_data.index.duplicated(keep='last')]
                         
@@ -382,21 +496,21 @@ def process_realtime_data(user_id, instance_id, symbol, exchange_type, token, st
                             strategy_name, 
                             instance_name, 
                             "DATA_UPDATE", 
-                            f"Updated data from WebSocket, now have {len(current_data)} points"
+                            f"Updated data from WebSocket, now have {len(current_data)} {timeframe} candles"
                         )
             
-            # Fall back to OpenAlgo if WebSocket failed or had no data
+            # Fall back to AngelOne API if WebSocket failed or had no data
             if new_data is None or new_data.empty:
                 try:
-                    # Fall back to OpenAlgo for data
-                    end_date = datetime.now().strftime("%Y-%m-%d")
-                    start_date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+                    # Fall back to AngelOne for data
+                    end_date = datetime.now().strftime("%Y-%m-%d %H:%M")
+                    start_date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d %H:%M")
                     
                     logger.log_strategy_event(
                         strategy_name, 
                         instance_name, 
                         "FALLBACK_DATA", 
-                        f"Falling back to OpenAlgo API for {symbol} data"
+                        f"Falling back to AngelOne API for {symbol} data"
                     )
                     
                     new_data = get_historical_data(
@@ -414,7 +528,7 @@ def process_realtime_data(user_id, instance_id, symbol, exchange_type, token, st
                             strategy_name, 
                             instance_name, 
                             "DATA_UPDATE", 
-                            f"Updated data from OpenAlgo API, now have {len(current_data)} points"
+                            f"Updated data from AngelOne API, now have {len(current_data)} {timeframe} candles"
                         )
                 except Exception as e:
                     logger.log_strategy_event(
@@ -764,3 +878,55 @@ def get_symbol_token_mapping(symbol, exchange):
     
     # Default mapping if not found
     return {'exchange_type': 1, 'token': '26000'}
+
+def resample_to_timeframe(data_df, timeframe):
+    """
+    Resample tick data or higher frequency data to the specified timeframe
+    Returns a new DataFrame with OHLC data at the requested timeframe
+    """
+    if data_df.empty:
+        return data_df
+    
+    # Make a copy to avoid modifying the original
+    df = data_df.copy()
+    
+    # Map timeframe to pandas frequency string
+    freq_map = {
+        '1min': '1T',
+        '3min': '3T',
+        '5min': '5T',
+        '10min': '10T',
+        '15min': '15T',
+        '30min': '30T',
+        '1hour': '1H',
+        '1day': '1D'
+    }
+    
+    # Default to 1 day if timeframe not recognized
+    freq = freq_map.get(timeframe.lower(), '1D')
+    
+    # Only resample if we have a valid date/time index
+    if isinstance(df.index, pd.DatetimeIndex):
+        # Perform the resampling to get OHLC bars at the desired frequency
+        resampled = df.resample(freq).agg({
+            'open': 'first',
+            'high': 'max',
+            'low': 'min',
+            'close': 'last',
+            'volume': 'sum'
+        })
+        
+        # Drop NaN rows that might result from resampling
+        resampled = resampled.dropna()
+        
+        return resampled
+    else:
+        # If index is not a DatetimeIndex, log warning and return original
+        logger.log_strategy_event(
+            "DataResample", 
+            timeframe, 
+            "RESAMPLE_ERROR", 
+            f"Data does not have DatetimeIndex, cannot resample to {timeframe}",
+            "warning"
+        )
+        return df

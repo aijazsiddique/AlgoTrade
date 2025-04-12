@@ -33,19 +33,48 @@ def register_webhook(client, strategy_name):
 
 def send_strategy_signal(user, webhook_id, symbol, action, position_size=1):
     """
-    Send a signal to OpenAlgo via the Strategy API
+    Send a signal to OpenAlgo via direct placeorder API instead of webhook
     """
     try:
-        strategy_client = Strategy(
-            host_url=user.openalgo_host_url or "http://127.0.0.1:5000",
-            webhook_id=webhook_id
+        # Get the OpenAlgo client
+        client = get_openalgo_client(user)
+        
+        # Parse symbol and exchange from the format if needed
+        # For simple equity symbols, use the symbol as is
+        # For complex symbols, parse them according to OpenAlgo's format
+        symbol_parts = symbol.split("@")
+        if len(symbol_parts) > 1:
+            # Symbol format is like "RELIANCE@NSE"
+            base_symbol = symbol_parts[0]
+            exchange = symbol_parts[1]
+        else:
+            # If no exchange specified, assume NSE
+            base_symbol = symbol
+            exchange = "NSE"
+        
+        # Determine order parameters based on action
+        # Actions can be "BUY", "SELL", "EXIT_LONG", "EXIT_SHORT"
+        order_action = "BUY"
+        if action.upper() in ["SELL", "EXIT_LONG", "SHORT", "SHORT_ENTRY"]:
+            order_action = "SELL"
+        
+        # Default to intraday (MIS) product, can be customized based on requirements
+        product_type = "MIS"
+        
+        # Place the order using direct API
+        response = client.placeorder(
+            symbol=base_symbol,
+            exchange=exchange,
+            action=order_action,
+            quantity=position_size,
+            price_type="MARKET",
+            product=product_type
         )
         
-        response = strategy_client.strategyorder(symbol, action, position_size)
         return response
         
     except Exception as e:
-        print(f"Error sending strategy signal: {str(e)}")
+        print(f"Error sending order via OpenAlgo: {str(e)}")
         return {"status": "error", "message": str(e)}
 
 def format_order_params(instance, signal_type):

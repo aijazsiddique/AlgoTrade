@@ -22,14 +22,35 @@ def index():
     if current_user.openalgo_api_key:
         try:
             client = get_openalgo_client(current_user)
-            funds = client.funds()
-            positions = client.positionbook()
-            orders = client.orderbook()
             
+            # Get funds data
+            funds_response = client.funds()
+            funds_data = funds_response.get('data', {}) if isinstance(funds_response, dict) else {}
+            
+            # Get positions data
+            positions_response = client.positionbook()
+            positions_data = positions_response.get('data', []) if isinstance(positions_response, dict) else []
+            
+            # Get orders data
+            orders_response = client.orderbook()
+            orders_data = orders_response.get('data', []) if isinstance(orders_response, dict) else []
+            
+            # Get holdings data
+            holdings_response = client.holdings()
+            holdings_data = holdings_response.get('data', []) if isinstance(holdings_response, dict) else []
+            
+            # Format account info according to API response structure
             account_info = {
-                'funds': funds.get('data', {}),
-                'positions_count': len(positions.get('data', [])),
-                'orders_count': len(orders.get('data', []))
+                'funds': {
+                    'availablecash': funds_data.get('availablecash', '0.00'),
+                    'collateral': funds_data.get('collateral', '0.00'),
+                    'm2mrealized': funds_data.get('m2mrealized', '0.00'),
+                    'm2munrealized': funds_data.get('m2munrealized', '0.00'),
+                    'utiliseddebits': funds_data.get('utiliseddebits', '0.00')
+                },
+                'positions_count': len(positions_data),
+                'orders_count': len(orders_data),
+                'holdings_count': len(holdings_data)
             }
         except Exception as e:
             flash(f"Could not fetch account information: {str(e)}", "warning")
@@ -60,40 +81,15 @@ def positions():
             
         positions_data = positions_response.get('data', [])
         
-        # Process positions to ensure they have the required attributes
-        processed_positions = []
-        for position in positions_data:
-            # If position is a string, convert it to a dictionary with default values
-            if isinstance(position, str):
-                processed_positions.append({
-                    'symbol': position,
-                    'exchange': 'N/A',
-                    'product': 'N/A',
-                    'netqty': 0,
-                    'avgprice': 0,
-                    'ltp': 0,
-                    'pnl': 0
-                })
-            else:
-                # Ensure position has all required attributes
-                if not isinstance(position, dict):
-                    position = {}  # Convert to dictionary if not already
-                
-                processed_position = {
-                    'symbol': position.get('symbol', 'N/A'),
-                    'exchange': position.get('exchange', 'N/A'),
-                    'product': position.get('product', 'N/A'),
-                    'netqty': position.get('netqty', 0),
-                    'avgprice': position.get('avgprice', 0),
-                    'ltp': position.get('ltp', 0),
-                    'pnl': position.get('pnl', 0)
-                }
-                processed_positions.append(processed_position)
+        # Calculate total P&L from positions
+        total_pnl = sum(float(position.get('pnl', 0)) for position in positions_data 
+                        if isinstance(position, dict))
         
         return render_template(
             'dashboard/positions.html',
             title='Positions',
-            positions=processed_positions
+            positions=positions_data,
+            total_pnl=total_pnl
         )
     except Exception as e:
         flash(f"Could not fetch positions: {str(e)}", "danger")
@@ -115,45 +111,22 @@ def orders():
             flash("Invalid response format from OpenAlgo API", "danger")
             return redirect(url_for('dashboard.index'))
             
+        # Extract the data and stats from the orderbook response
         orders_data = orders_response.get('data', [])
-        
-        # Process orders to ensure they have the required attributes
-        processed_orders = []
-        for order in orders_data:
-            # If order is a string, convert it to a dictionary with default values
-            if isinstance(order, str):
-                # Try to handle it as order ID
-                processed_orders.append({
-                    'orderid': order,
-                    'symbol': 'N/A',
-                    'pricetype': 'N/A',
-                    'action': 'N/A',
-                    'quantity': 0,
-                    'price': 0,
-                    'status': 'UNKNOWN',
-                    'updatetime': 'N/A'
-                })
-            else:
-                # Ensure order has all required attributes
-                if not isinstance(order, dict):
-                    order = {}  # Convert to dictionary if not already
-                
-                processed_order = {
-                    'orderid': order.get('orderid', 'N/A'),
-                    'symbol': order.get('symbol', 'N/A'),
-                    'pricetype': order.get('pricetype', 'N/A'),
-                    'action': order.get('action', 'N/A'),
-                    'quantity': order.get('quantity', 0),
-                    'price': order.get('price', 0),
-                    'status': order.get('status', 'UNKNOWN'),
-                    'updatetime': order.get('updatetime', 'N/A')
-                }
-                processed_orders.append(processed_order)
+        order_stats = orders_response.get('stats', {})
         
         return render_template(
             'dashboard/orders.html',
             title='Orders',
-            orders=processed_orders
+            orders=orders_data,
+            stats={
+                'total_orders': order_stats.get('total_orders', 0),
+                'buy_orders': order_stats.get('buy_orders', 0),
+                'sell_orders': order_stats.get('sell_orders', 0),
+                'completed_orders': order_stats.get('completed_orders', 0),
+                'open_orders': order_stats.get('open_orders', 0),
+                'rejected_orders': order_stats.get('rejected_orders', 0)
+            }
         )
     except Exception as e:
         flash(f"Could not fetch orders: {str(e)}", "danger")
@@ -176,43 +149,18 @@ def trades():
             return redirect(url_for('dashboard.index'))
             
         trades_data = trades_response.get('data', [])
-        
-        # Process trades to ensure they have the required attributes
-        processed_trades = []
-        for trade in trades_data:
-            # If trade is a string, convert it to a dictionary with default values
-            if isinstance(trade, str):
-                processed_trades.append({
-                    'tradeid': trade,
-                    'orderid': 'N/A',
-                    'symbol': 'N/A',
-                    'exchange': 'N/A',
-                    'action': 'N/A',
-                    'quantity': 0,
-                    'price': 0,
-                    'tradetime': 'N/A'
-                })
-            else:
-                # Ensure trade has all required attributes
-                if not isinstance(trade, dict):
-                    trade = {}  # Convert to dictionary if not already
-                
-                processed_trade = {
-                    'tradeid': trade.get('tradeid', 'N/A'),
-                    'orderid': trade.get('orderid', 'N/A'),
-                    'symbol': trade.get('symbol', 'N/A'),
-                    'exchange': trade.get('exchange', 'N/A'),
-                    'action': trade.get('action', 'N/A'),
-                    'quantity': trade.get('quantity', 0),
-                    'price': trade.get('price', 0),
-                    'tradetime': trade.get('tradetime', 'N/A')
-                }
-                processed_trades.append(processed_trade)
+        trade_stats = trades_response.get('stats', {})
         
         return render_template(
             'dashboard/trades.html',
             title='Trades',
-            trades=processed_trades
+            trades=trades_data,
+            stats={
+                'total_trades': trade_stats.get('total_trades', 0),
+                'buy_trades': trade_stats.get('buy_trades', 0),
+                'sell_trades': trade_stats.get('sell_trades', 0),
+                'total_value': trade_stats.get('total_value', 0)
+            }
         )
     except Exception as e:
         flash(f"Could not fetch trades: {str(e)}", "danger")
@@ -235,41 +183,18 @@ def holdings():
             return redirect(url_for('dashboard.index'))
             
         holdings_data = holdings_response.get('data', [])
-        
-        # Process holdings to ensure they have the required attributes
-        processed_holdings = []
-        for holding in holdings_data:
-            # If holding is a string, convert it to a dictionary with default values
-            if isinstance(holding, str):
-                processed_holdings.append({
-                    'symbol': holding,
-                    'exchange': 'N/A',
-                    'isin': 'N/A',
-                    'quantity': 0,
-                    'averageprice': 0,
-                    'ltp': 0,
-                    'currentvalue': 0
-                })
-            else:
-                # Ensure holding has all required attributes
-                if not isinstance(holding, dict):
-                    holding = {}  # Convert to dictionary if not already
-                
-                processed_holding = {
-                    'symbol': holding.get('symbol', 'N/A'),
-                    'exchange': holding.get('exchange', 'N/A'),
-                    'isin': holding.get('isin', 'N/A'),
-                    'quantity': holding.get('quantity', 0),
-                    'averageprice': holding.get('averageprice', 0),
-                    'ltp': holding.get('ltp', 0),
-                    'currentvalue': holding.get('currentvalue', 0)
-                }
-                processed_holdings.append(processed_holding)
+        holdings_stats = holdings_response.get('stats', {})
         
         return render_template(
             'dashboard/holdings.html',
             title='Holdings',
-            holdings=processed_holdings
+            holdings=holdings_data,
+            stats={
+                'total_holdings_value': holdings_stats.get('total_holdings_value', 0),
+                'total_investment': holdings_stats.get('total_investment', 0),
+                'total_pnl': holdings_stats.get('total_pnl', 0),
+                'total_pnl_percentage': holdings_stats.get('total_pnl_percentage', 0)
+            }
         )
     except Exception as e:
         flash(f"Could not fetch holdings: {str(e)}", "danger")
