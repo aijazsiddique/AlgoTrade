@@ -22,10 +22,12 @@ login_manager.login_message_category = 'info'
 from app.controllers.auth import auth_bp
 from app.controllers.dashboard import dashboard_bp
 from app.controllers.strategy import strategy_bp
+from app.controllers.admin import admin_bp
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(dashboard_bp)
 app.register_blueprint(strategy_bp)
+app.register_blueprint(admin_bp)
 
 # Import models to ensure they're registered with SQLAlchemy
 from app.models import user, strategy, instance

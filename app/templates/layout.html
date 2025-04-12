@@ -36,7 +36,13 @@
                 <div class="user-info text-center">
                     <i class="fas fa-user-circle user-avatar"></i>
                     <div class="user-name">{{ current_user.username }}</div>
-                    <div class="user-role">Trader</div>
+                    <div class="user-role">
+                        {% if current_user.is_admin %}
+                        Administrator
+                        {% else %}
+                        Trader
+                        {% endif %}
+                    </div>
                 </div>
             </div>
 
@@ -47,6 +53,38 @@
                         <span>Dashboard</span>
                     </a>
                 </li>
+                
+                {% if current_user.is_admin %}
+                <li class="sidebar-header">Admin Panel</li>
+                
+                <li class="sidebar-item">
+                    <a href="{{ url_for('admin.index') }}" class="sidebar-link {% if request.endpoint == 'admin.index' %}active{% endif %}">
+                        <i class="fas fa-user-shield"></i>
+                        <span>Admin Dashboard</span>
+                    </a>
+                </li>
+                
+                <li class="sidebar-item">
+                    <a href="{{ url_for('admin.users') }}" class="sidebar-link {% if request.endpoint == 'admin.users' %}active{% endif %}">
+                        <i class="fas fa-users-cog"></i>
+                        <span>User Management</span>
+                    </a>
+                </li>
+                
+                <li class="sidebar-item">
+                    <a href="{{ url_for('admin.strategies') }}" class="sidebar-link {% if request.endpoint == 'admin.strategies' %}active{% endif %}">
+                        <i class="fas fa-code"></i>
+                        <span>Strategy Management</span>
+                    </a>
+                </li>
+                
+                <li class="sidebar-item">
+                    <a href="{{ url_for('admin.instances') }}" class="sidebar-link {% if request.endpoint == 'admin.instances' %}active{% endif %}">
+                        <i class="fas fa-rocket"></i>
+                        <span>Instance Management</span>
+                    </a>
+                </li>
+                {% endif %}
                 
                 <li class="sidebar-header">Trading Management</li>
                 
@@ -116,9 +154,9 @@
             <nav class="navbar navbar-expand-lg navbar-light bg-white top-navbar">
                 <div class="container-fluid">
                     {% if current_user.is_authenticated %}
-                    <button type="button" id="sidebarCollapse" class="navbar-btn">
-                        <i class="fas fa-bars"></i>
-                    </button>
+                    <a class="navbar-brand" href="{{ url_for('dashboard.index') }}">
+                        <i class="fas fa-chart-line me-2"></i> AlgoTrade
+                    </a>
                     {% else %}
                     <a class="navbar-brand" href="{{ url_for('dashboard.index') }}">
                         <i class="fas fa-chart-line me-2"></i> AlgoTrade
@@ -133,6 +171,10 @@
                                 <span class="d-none d-md-inline">{{ current_user.username }}</span>
                             </div>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+                                {% if current_user.is_admin %}
+                                <li><a class="dropdown-item" href="{{ url_for('admin.index') }}">Admin Dashboard</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                {% endif %}
                                 <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">Profile</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a></li>

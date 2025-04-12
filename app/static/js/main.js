@@ -1,45 +1,7 @@
 // Main JavaScript for AlgoTrade Platform
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Sidebar toggling
-    const sidebarCollapse = document.getElementById('sidebarCollapse');
-    const sidebar = document.querySelector('.sidebar');
-    const content = document.querySelector('.content');
-    
-    if (sidebarCollapse) {
-        sidebarCollapse.addEventListener('click', function() {
-            sidebar.classList.toggle('collapsed');
-            content.classList.toggle('sidebar-collapsed');
-            
-            // Save state to localStorage
-            if (sidebar.classList.contains('collapsed')) {
-                localStorage.setItem('sidebar-collapsed', 'true');
-            } else {
-                localStorage.setItem('sidebar-collapsed', 'false');
-            }
-        });
-        
-        // Check for saved state on page load
-        if (localStorage.getItem('sidebar-collapsed') === 'true') {
-            sidebar.classList.add('collapsed');
-            content.classList.add('sidebar-collapsed');
-        }
-    }
-    
-    // Mobile sidebar toggling
-    if (window.innerWidth <= 768) {
-        document.body.addEventListener('click', function(e) {
-            if (sidebar.classList.contains('show') && !sidebar.contains(e.target) && e.target !== sidebarCollapse) {
-                sidebar.classList.remove('show');
-            }
-        });
-        
-        if (sidebarCollapse) {
-            sidebarCollapse.addEventListener('click', function() {
-                sidebar.classList.toggle('show');
-            });
-        }
-    }
+    // Sidebar toggling functionality has been removed
     
     // Enable tooltips
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));

@@ -11,6 +11,7 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(20), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(60), nullable=False)
+    is_admin = db.Column(db.Boolean, default=False, nullable=False)
     openalgo_api_key = db.Column(db.String(100), nullable=True)
     openalgo_host_url = db.Column(db.String(255), nullable=True, default="http://127.0.0.1:5000")
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)

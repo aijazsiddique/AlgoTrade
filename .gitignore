@@ -47,10 +47,6 @@ instance/
 *.log
 logs/
 
-# Project specific
-migrations/versions/
-!migrations/versions/__init__.py
-
 # Jupyter Notebook
 .ipynb_checkpoints
 
