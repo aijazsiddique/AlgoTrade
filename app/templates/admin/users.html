@@ -3,21 +3,22 @@
 {% block content %}
 <div class="container-fluid">
     <h1 class="h3 mb-4 text-gray-800">User Management</h1>
-    
+
     <div class="card shadow mb-4">
         <div class="card-header py-3 d-flex justify-content-between align-items-center">
             <h6 class="m-0 fw-bold">All Users</h6>
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered" id="usersTable" width="100%" cellspacing="0">
+                <table class="table table-bordered table-hover" id="users-table">
                     <thead>
                         <tr>
                             <th>ID</th>
                             <th>Username</th>
                             <th>Email</th>
-                            <th>Admin Status</th>
-                            <th>API Key</th>
+                            <th>Admin</th>
+                            <th>OpenAlgo API</th>
+                            <th>AngelOne API</th>
                             <th>Created</th>
                             <th>Actions</th>
                         </tr>
@@ -37,22 +38,43 @@
                             </td>
                             <td>
                                 {% if user.openalgo_api_key %}
-                                <span class="badge bg-primary">Configured</span>
+                                <span class="badge bg-success">Configured</span>
                                 {% else %}
-                                <span class="badge bg-danger">Not Configured</span>
+                                <span class="badge bg-warning text-dark">Not Set</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.angelone_api_key %}
+                                <span class="badge bg-success">Configured</span>
+                                {% else %}
+                                <span class="badge bg-warning text-dark">Not Set</span>
+                                {% endif %}
+                                
+                                {% if user.angelone_ws_enabled %}
+                                <span class="badge bg-info ms-1">WebSocket Active</span>
                                 {% endif %}
                             </td>
                             <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
                             <td>
-                                <form action="{{ url_for('admin.toggle_admin', user_id=user.id) }}" method="POST" class="d-inline">
-                                    <button type="submit" class="btn btn-sm {% if user.is_admin %}btn-danger{% else %}btn-success{% endif %}" {% if user.id == current_user.id %}disabled{% endif %}>
-                                        {% if user.is_admin %}
-                                        <i class="fas fa-user-times"></i> Remove Admin
-                                        {% else %}
-                                        <i class="fas fa-user-shield"></i> Make Admin
-                                        {% endif %}
+                                <div class="btn-group">
+                                    {% if current_user.id != user.id %}
+                                    <form action="{{ url_for('admin.toggle_admin', user_id=user.id) }}" method="POST">
+                                        <button type="submit" class="btn btn-sm {% if user.is_admin %}btn-danger{% else %}btn-success{% endif %}" title="{% if user.is_admin %}Remove Admin{% else %}Make Admin{% endif %}">
+                                            <i class="fas {% if user.is_admin %}fa-user-minus{% else %}fa-user-shield{% endif %}"></i>
+                                        </button>
+                                    </form>
+                                    {% else %}
+                                    <button class="btn btn-sm btn-secondary" disabled title="Cannot modify yourself">
+                                        <i class="fas fa-user-shield"></i>
                                     </button>
-                                </form>
+                                    {% endif %}
+                                    
+                                    {% if user.is_admin %}
+                                    <a href="{{ url_for('admin.manage_angelone', user_id=user.id) }}" class="btn btn-sm btn-info" title="AngelOne API Settings">
+                                        <i class="fas fa-key"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -62,4 +84,12 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $(document).ready(function() {
+        $('#users-table').DataTable();
+    });
+</script>
 {% endblock %}

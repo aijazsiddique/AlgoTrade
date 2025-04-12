@@ -1,0 +1,535 @@
+{% extends "layout.html" %}
+
+{% block title %}WebSocket Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>WebSocket Connection Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div id="ws-status-panel">
+                                <div class="mb-3">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <strong>Connection Status:</strong>
+                                        <span id="connection-status" class="ms-2 badge bg-secondary">Unknown</span>
+                                    </div>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <strong>Last Updated:</strong>
+                                        <span id="last-updated" class="ms-2">-</span>
+                                    </div>
+                                    <div class="d-flex align-items-center mb-2">
+                                        <strong>Token Updated:</strong>
+                                        <span id="token-updated" class="ms-2">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex flex-wrap gap-2">
+                                <button id="refresh-status-btn" class="btn btn-sm btn-info">
+                                    <i class="fas fa-sync-alt"></i> Refresh Status
+                                </button>
+                                <button id="refresh-token-btn" class="btn btn-sm btn-warning">
+                                    <i class="fas fa-key"></i> Refresh Token
+                                </button>
+                                <button id="init-ws-btn" class="btn btn-sm btn-success">
+                                    <i class="fas fa-plug"></i> Initialize WebSocket
+                                </button>
+                                <button id="close-ws-btn" class="btn btn-sm btn-danger">
+                                    <i class="fas fa-times"></i> Close Connection
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5>Symbol Subscriptions</h5>
+                    <button id="refresh-symbols-btn" class="btn btn-sm btn-info">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="symbols-table" class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Exchange</th>
+                                    <th>Token</th>
+                                    <th>Mode</th>
+                                    <th>Data Points</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Will be populated via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Add Symbol Subscription</h5>
+                </div>
+                <div class="card-body">
+                    <form id="subscribe-form">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="symbol-input" class="form-label">Symbol</label>
+                                <input type="text" class="form-control" id="symbol-input" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="exchange-input" class="form-label">Exchange</label>
+                                <select class="form-select" id="exchange-input" required>
+                                    <option value="nse_cm">NSE</option>
+                                    <option value="bse_cm">BSE</option>
+                                    <option value="nse_fo">NSE Futures & Options</option>
+                                    <option value="mcx_fo">MCX</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="token-input" class="form-label">Token</label>
+                                <input type="text" class="form-control" id="token-input" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="mode-input" class="form-label">Mode</label>
+                                <select class="form-select" id="mode-input">
+                                    <option value="1">LTP Mode (1)</option>
+                                    <option value="2" selected>Quote Mode (2)</option>
+                                    <option value="3">Full Mode (3)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">&nbsp;</label>
+                                <button type="submit" class="btn btn-primary d-block w-100">
+                                    <i class="fas fa-plus"></i> Subscribe
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5>Symbol Data</h5>
+                    <div>
+                        <select id="chart-symbol-selector" class="form-select form-select-sm">
+                            <option value="">Select Symbol...</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="ohlc-chart" style="height: 400px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Alerts and Messages -->
+<div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="statusModalLabel">Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="statusModalBody">
+                ...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Include ApexCharts -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+<script>
+    let chart = null;
+    let symbolsData = {};
+    
+    // Function to update WebSocket status display
+    function updateStatusDisplay(data) {
+        let statusBadge = document.getElementById('connection-status');
+        let lastUpdated = document.getElementById('last-updated');
+        let tokenUpdated = document.getElementById('token-updated');
+        
+        // Update connection status
+        if (data.connected) {
+            statusBadge.innerText = 'Connected';
+            statusBadge.className = 'ms-2 badge bg-success';
+        } else {
+            statusBadge.innerText = 'Disconnected';
+            statusBadge.className = 'ms-2 badge bg-danger';
+        }
+        
+        // Update last timestamp
+        lastUpdated.innerText = new Date().toLocaleString();
+        
+        // Update token timestamp if available
+        if (data.token_updated_at) {
+            tokenUpdated.innerText = data.token_updated_at;
+        }
+        
+        // Update buttons based on connection state
+        document.getElementById('init-ws-btn').disabled = data.connected;
+        document.getElementById('close-ws-btn').disabled = !data.connected;
+    }
+    
+    // Function to show an alert message modal
+    function showAlert(title, message, isError = false) {
+        let modal = new bootstrap.Modal(document.getElementById('statusModal'));
+        document.getElementById('statusModalLabel').innerText = title;
+        document.getElementById('statusModalBody').innerHTML = message;
+        
+        if (isError) {
+            document.getElementById('statusModalBody').classList.add('text-danger');
+        } else {
+            document.getElementById('statusModalBody').classList.remove('text-danger');
+        }
+        
+        modal.show();
+    }
+    
+    // Function to fetch WebSocket status
+    function fetchStatus() {
+        fetch('/websocket/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateStatusDisplay(data.status);
+                } else {
+                    console.error('Error fetching status:', data.message);
+                }
+            })
+            .catch(err => {
+                console.error('Error fetching WebSocket status:', err);
+            });
+    }
+    
+    // Function to load subscribed symbols
+    function loadSubscribedSymbols() {
+        fetch('/websocket/active-symbols')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const tableBody = document.getElementById('symbols-table').querySelector('tbody');
+                    const symbolSelector = document.getElementById('chart-symbol-selector');
+                    
+                    // Clear existing rows
+                    tableBody.innerHTML = '';
+                    
+                    // Clear symbol selector options (keep the first one)
+                    while (symbolSelector.options.length > 1) {
+                        symbolSelector.remove(1);
+                    }
+                    
+                    if (data.count === 0) {
+                        // No symbols case
+                        tableBody.innerHTML = `<tr><td colspan="6" class="text-center">No subscribed symbols</td></tr>`;
+                    } else {
+                        // Add each symbol to the table
+                        data.symbols.forEach(symbol => {
+                            const row = document.createElement('tr');
+                            
+                            row.innerHTML = `
+                                <td>${symbol.symbol}</td>
+                                <td>${symbol.exchange_type}</td>
+                                <td>${symbol.token}</td>
+                                <td>${symbol.mode}</td>
+                                <td>${symbol.data_points}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-danger unsubscribe-btn" data-symbol="${symbol.symbol}">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </td>
+                            `;
+                            
+                            tableBody.appendChild(row);
+                            
+                            // Add to symbol selector
+                            const option = document.createElement('option');
+                            option.value = symbol.symbol;
+                            option.text = symbol.symbol;
+                            symbolSelector.add(option);
+                        });
+                        
+                        // Attach click handlers to unsubscribe buttons
+                        document.querySelectorAll('.unsubscribe-btn').forEach(btn => {
+                            btn.addEventListener('click', function() {
+                                const symbol = this.getAttribute('data-symbol');
+                                unsubscribeFromSymbol(symbol);
+                            });
+                        });
+                    }
+                } else {
+                    console.error('Error loading symbols:', data.message);
+                }
+            })
+            .catch(err => {
+                console.error('Error loading symbols:', err);
+            });
+    }
+    
+    // Function to unsubscribe from a symbol
+    function unsubscribeFromSymbol(symbol) {
+        fetch('/websocket/unsubscribe', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                symbol: symbol
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('Success', `Unsubscribed from ${symbol}`);
+                loadSubscribedSymbols();
+            } else {
+                showAlert('Error', data.message, true);
+            }
+        })
+        .catch(err => {
+            showAlert('Error', `Failed to unsubscribe: ${err}`, true);
+        });
+    }
+    
+    // Function to initialize chart
+    function initChart(symbol) {
+        const options = {
+            series: [{
+                data: [] // Will be populated with OHLC data
+            }],
+            chart: {
+                type: 'candlestick',
+                height: 350,
+                animations: {
+                    enabled: false
+                }
+            },
+            title: {
+                text: `OHLC Data: ${symbol}`,
+                align: 'left'
+            },
+            xaxis: {
+                type: 'datetime'
+            },
+            yaxis: {
+                tooltip: {
+                    enabled: true
+                }
+            }
+        };
+        
+        // Destroy previous chart if it exists
+        if (chart) {
+            chart.destroy();
+        }
+        
+        chart = new ApexCharts(document.querySelector("#ohlc-chart"), options);
+        chart.render();
+    }
+    
+    // Function to load symbol data for charting
+    function loadSymbolData(symbol) {
+        fetch(`/websocket/symbol-data?symbol=${symbol}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.data.length === 0) {
+                        showAlert('No Data', `No data available for ${symbol}`);
+                        return;
+                    }
+                    
+                    // Initialize chart if it doesn't exist
+                    if (!chart) {
+                        initChart(symbol);
+                    } else {
+                        chart.updateOptions({
+                            title: {
+                                text: `OHLC Data: ${symbol}`
+                            }
+                        });
+                    }
+                    
+                    // Format data for ApexCharts
+                    const seriesData = data.data.map(item => {
+                        return {
+                            x: new Date(item.timestamp),
+                            y: [item.open, item.high, item.low, item.close]
+                        };
+                    });
+                    
+                    // Update chart
+                    chart.updateSeries([{
+                        data: seriesData
+                    }]);
+                } else {
+                    showAlert('Error', data.message, true);
+                }
+            })
+            .catch(err => {
+                showAlert('Error', `Failed to load symbol data: ${err}`, true);
+            });
+    }
+
+    // Document Ready
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initial status fetch
+        fetchStatus();
+        loadSubscribedSymbols();
+        
+        // Set up event handlers
+        document.getElementById('refresh-status-btn').addEventListener('click', fetchStatus);
+        
+        document.getElementById('refresh-symbols-btn').addEventListener('click', loadSubscribedSymbols);
+        
+        // Initialize WebSocket connection
+        document.getElementById('init-ws-btn').addEventListener('click', function() {
+            fetch('/websocket/initialize', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('Success', 'WebSocket connection initialized successfully');
+                    fetchStatus();
+                } else {
+                    showAlert('Error', data.message, true);
+                }
+            })
+            .catch(err => {
+                showAlert('Error', `Failed to initialize WebSocket: ${err}`, true);
+            });
+        });
+        
+        // Close WebSocket connection
+        document.getElementById('close-ws-btn').addEventListener('click', function() {
+            fetch('/websocket/close', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('Success', 'WebSocket connection closed');
+                    fetchStatus();
+                } else {
+                    showAlert('Error', data.message, true);
+                }
+            })
+            .catch(err => {
+                showAlert('Error', `Failed to close WebSocket: ${err}`, true);
+            });
+        });
+        
+        // Refresh token
+        document.getElementById('refresh-token-btn').addEventListener('click', function() {
+            fetch('/websocket/refresh-token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('Success', 'AngelOne tokens refreshed successfully');
+                    fetchStatus();
+                } else {
+                    showAlert('Error', data.message, true);
+                }
+            })
+            .catch(err => {
+                showAlert('Error', `Failed to refresh tokens: ${err}`, true);
+            });
+        });
+        
+        // Form submission for subscribing to symbols
+        document.getElementById('subscribe-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const symbol = document.getElementById('symbol-input').value;
+            const exchange = document.getElementById('exchange-input').value;
+            const token = document.getElementById('token-input').value;
+            const mode = parseInt(document.getElementById('mode-input').value);
+            
+            fetch('/websocket/subscribe', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    symbol: symbol,
+                    exchange_type: exchange,
+                    token: token,
+                    mode: mode
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('Success', `Subscribed to ${symbol} successfully`);
+                    loadSubscribedSymbols();
+                    
+                    // Reset form inputs
+                    document.getElementById('symbol-input').value = '';
+                    document.getElementById('token-input').value = '';
+                } else {
+                    showAlert('Error', data.message, true);
+                }
+            })
+            .catch(err => {
+                showAlert('Error', `Failed to subscribe: ${err}`, true);
+            });
+        });
+        
+        // Symbol selector for chart
+        document.getElementById('chart-symbol-selector').addEventListener('change', function() {
+            const symbol = this.value;
+            if (symbol) {
+                loadSymbolData(symbol);
+            }
+        });
+        
+        // Set up periodic refresh
+        setInterval(fetchStatus, 30000); // Refresh status every 30 seconds
+    });
+</script>
+{% endblock %}

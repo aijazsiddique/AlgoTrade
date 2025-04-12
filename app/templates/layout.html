@@ -84,6 +84,13 @@
                         <span>Instance Management</span>
                     </a>
                 </li>
+                
+                <li class="sidebar-item">
+                    <a href="{{ url_for('admin.websocket_settings') }}" class="sidebar-link {% if request.endpoint == 'admin.websocket_settings' %}active{% endif %}">
+                        <i class="fas fa-wifi"></i>
+                        <span>WebSocket Management</span>
+                    </a>
+                </li>
                 {% endif %}
                 
                 <li class="sidebar-header">Trading Management</li>

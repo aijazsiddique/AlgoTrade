@@ -6,7 +6,7 @@
 
     <!-- Admin Dashboard Stats -->
     <div class="row">
-        <div class="col-xl-4 col-md-6 mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-primary shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
@@ -24,7 +24,7 @@
             </div>
         </div>
 
-        <div class="col-xl-4 col-md-6 mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-success shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
@@ -42,7 +42,7 @@
             </div>
         </div>
 
-        <div class="col-xl-4 col-md-6 mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
             <div class="card border-left-warning shadow h-100 py-2">
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
@@ -59,6 +59,30 @@
                 </div>
             </div>
         </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col me-2">
+                            <div class="text-xs fw-bold text-info text-uppercase mb-1">
+                                WebSocket Status
+                            </div>
+                            <div class="h5 mb-0 fw-bold">
+                                {% if websocket_status %}
+                                <span class="text-success">Connected</span>
+                                {% else %}
+                                <span class="text-danger">Disconnected</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-wifi fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Admin Quick Links -->
@@ -70,19 +94,24 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
                             <a href="{{ url_for('admin.users') }}" class="btn btn-primary btn-block">
                                 <i class="fas fa-users me-2"></i> Manage Users
                             </a>
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
                             <a href="{{ url_for('admin.strategies') }}" class="btn btn-success btn-block">
                                 <i class="fas fa-code me-2"></i> Manage Strategies
                             </a>
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
                             <a href="{{ url_for('admin.instances') }}" class="btn btn-warning btn-block">
                                 <i class="fas fa-rocket me-2"></i> Manage Instances
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{{ url_for('admin.websocket_settings') }}" class="btn btn-info btn-block">
+                                <i class="fas fa-wifi me-2"></i> WebSocket Management
                             </a>
                         </div>
                     </div>

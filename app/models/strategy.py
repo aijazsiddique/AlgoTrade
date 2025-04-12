@@ -13,7 +13,7 @@ class Strategy(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     
     # Relationships
-    instances = db.relationship('StrategyInstance', backref='base_strategy', lazy=True, cascade="all, delete-orphan")
+    instances = db.relationship('StrategyInstance', backref='strategy', lazy=True, cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"Strategy('{self.name}', User ID: {self.user_id})"

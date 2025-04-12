@@ -14,6 +14,19 @@ class User(db.Model, UserMixin):
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
     openalgo_api_key = db.Column(db.String(100), nullable=True)
     openalgo_host_url = db.Column(db.String(255), nullable=True, default="http://127.0.0.1:5000")
+    
+    # AngelOne credentials (only for admin use)
+    angelone_api_key = db.Column(db.String(100))
+    angelone_client_code = db.Column(db.String(100))
+    angelone_password = db.Column(db.String(255))  # This should be encrypted in production
+    angelone_totp_token = db.Column(db.String(255))  # This should be encrypted in production
+    angelone_feed_token = db.Column(db.String(255))
+    angelone_refresh_token = db.Column(db.String(255))
+    angelone_jwt_token = db.Column(db.String(1024))
+    angelone_ws_configured = db.Column(db.Boolean, default=False)
+    angelone_ws_enabled = db.Column(db.Boolean, default=False)
+    angelone_token_updated_at = db.Column(db.DateTime, nullable=True)
+    
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
     

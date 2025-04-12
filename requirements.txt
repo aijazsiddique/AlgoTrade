@@ -5,7 +5,12 @@ flask-login
 flask-wtf
 flask-bcrypt
 email-validator
-openalgo  # Make sure to use the correct version
+openalgo
 pandas
 numpy
 werkzeug
+websocket-client
+smartapi-python
+pyotp
+queue
+logzero

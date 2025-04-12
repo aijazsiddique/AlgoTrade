@@ -1,0 +1,152 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 text-gray-800">AngelOne API Settings</h1>
+        <a href="{{ url_for('admin.users') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Users
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold">API Credentials for {{ user.username }}</h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="angelone_api_key" class="form-label">API Key</label>
+                            <input type="text" class="form-control" id="angelone_api_key" name="angelone_api_key" 
+                                   value="{{ user.angelone_api_key or '' }}" required>
+                            <div class="form-text">Your AngelOne API key</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="angelone_client_code" class="form-label">Client Code</label>
+                            <input type="text" class="form-control" id="angelone_client_code" name="angelone_client_code" 
+                                   value="{{ user.angelone_client_code or '' }}" required>
+                            <div class="form-text">Your AngelOne client code (usually your login ID)</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="angelone_password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="angelone_password" name="angelone_password" 
+                                   value="{{ user.angelone_password or '' }}" required>
+                            <div class="form-text text-warning">
+                                <i class="fas fa-exclamation-triangle"></i> 
+                                Note: Password is stored in plain text. In production, ensure this is properly encrypted.
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="angelone_totp_token" class="form-label">TOTP Token</label>
+                            <input type="text" class="form-control" id="angelone_totp_token" name="angelone_totp_token" 
+                                   value="{{ user.angelone_totp_token or '' }}" required>
+                            <div class="form-text">
+                                Your AngelOne TOTP token (secret key used to generate 2FA codes)
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="mb-3">
+                                <div class="text-secondary">
+                                    <small>
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        These credentials will be used to establish WebSocket connections to AngelOne.
+                                    </small>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Save Credentials
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold">Security Note</h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning mb-0">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        <strong>Security Warning:</strong> The current implementation stores AngelOne credentials in the database. 
+                        In a production environment, you should ensure that:
+                        <ul class="mt-2 mb-0">
+                            <li>All sensitive credentials are encrypted at rest</li>
+                            <li>Use environment variables or a secure vault for API keys</li>
+                            <li>Implement proper access controls and audit logging</li>
+                            <li>Consider using OAuth flow if available from AngelOne</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold">Getting Your API Credentials</h6>
+                </div>
+                <div class="card-body">
+                    <ol>
+                        <li>
+                            <strong>Log in to your AngelOne account</strong>
+                            <p class="text-muted small">Visit the AngelOne website and log in to your trading account.</p>
+                        </li>
+                        <li>
+                            <strong>Navigate to API settings</strong>
+                            <p class="text-muted small">Find the API or Developer settings section in your account.</p>
+                        </li>
+                        <li>
+                            <strong>Generate new API key</strong>
+                            <p class="text-muted small">Follow the instructions to create a new API key.</p>
+                        </li>
+                        <li>
+                            <strong>Set up TOTP</strong>
+                            <p class="text-muted small">Generate a TOTP token or use your existing one.</p>
+                        </li>
+                        <li>
+                            <strong>Save your credentials securely</strong>
+                            <p class="text-muted small">Once you've received your credentials, enter them on this page.</p>
+                        </li>
+                    </ol>
+                    <div class="alert alert-info mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        For more details, refer to the 
+                        <a href="https://smartapi.angelbroking.com/docs" target="_blank" class="alert-link">AngelOne API documentation</a>.
+                    </div>
+                </div>
+            </div>
+            
+            {% if user.angelone_ws_enabled %}
+            <div class="card border-success shadow mb-4">
+                <div class="card-header bg-success py-3">
+                    <h6 class="m-0 fw-bold text-white">Active WebSocket Connection</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-0">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <strong>WebSocket is active</strong> using this user's credentials.
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="text-center">
+                        <a href="{{ url_for('admin.websocket_settings') }}" class="btn btn-outline-success">
+                            <i class="fas fa-wifi me-2"></i>Manage WebSocket
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

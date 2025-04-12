@@ -1,0 +1,285 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-4 text-gray-800">WebSocket Management</h1>
+    
+    <!-- WebSocket Status Card -->
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 fw-bold">AngelOne WebSocket Status</h6>
+                    <button id="refreshStatus" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            {% if websocket_connected %}
+                            <i class="fas fa-check-circle fa-2x text-success"></i>
+                            {% else %}
+                            <i class="fas fa-times-circle fa-2x text-danger"></i>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h5 class="mb-1">Status: 
+                                {% if websocket_connected %}
+                                <span class="text-success" id="connection-status">Connected</span>
+                                {% else %}
+                                <span class="text-danger" id="connection-status">Disconnected</span>
+                                {% endif %}
+                            </h5>
+                            <p class="mb-0" id="connection-details">
+                                {% if websocket_connected %}
+                                WebSocket connection to AngelOne is active and receiving real-time data.
+                                {% else %}
+                                WebSocket is not connected. Connect to receive real-time data.
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="ms-auto">
+                            {% if websocket_connected %}
+                            <form action="{{ url_for('admin.websocket_disconnect') }}" method="POST">
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="fas fa-plug me-1"></i> Disconnect
+                                </button>
+                            </form>
+                            {% else %}
+                            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#connectModal">
+                                <i class="fas fa-plug me-1"></i> Connect
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Detailed Connection Status -->
+                    {% if ws_status %}
+                    <div class="mt-4">
+                        <h6 class="fw-bold">Detailed Status</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <span class="fw-bold">Last Data Update:</span>
+                                    <span id="last-data-time">{{ ws_status.last_data_time|default('None') }}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <span class="fw-bold">Active Symbols:</span>
+                                    <span id="subscribed-symbols-count">{{ ws_status.subscribed_symbols_count }}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <span class="fw-bold">Reconnection Attempts:</span>
+                                    <span id="reconnect-attempts">{{ ws_status.reconnect_attempts }}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <span class="fw-bold">Last Error:</span>
+                                    <span id="last-error" class="{% if ws_status.last_error %}text-danger{% endif %}">
+                                        {{ ws_status.last_error|default('None') }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Current Admin Info -->
+                    {% if current_admin %}
+                    <div class="mt-4">
+                        <h6 class="fw-bold">Active Connection</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <span class="fw-bold">Admin User:</span>
+                                    <span>{{ current_admin.username }}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <span class="fw-bold">Client Code:</span>
+                                    <span>{{ current_admin.angelone_client_code }}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <span class="fw-bold">Token Updated:</span>
+                                    <span>
+                                        {% if current_admin.angelone_token_updated_at %}
+                                            {{ current_admin.angelone_token_updated_at.strftime('%Y-%m-%d %H:%M') }}
+                                            <span class="ms-2 badge {% if (current_admin.angelone_token_updated_at - now()).total_seconds() < -21600 %}bg-warning{% else %}bg-success{% endif %}">
+                                                {% if (current_admin.angelone_token_updated_at - now()).total_seconds() < -21600 %}
+                                                    Refresh soon
+                                                {% else %}
+                                                    Valid
+                                                {% endif %}
+                                            </span>
+                                        {% else %}
+                                            Unknown
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Connection Details -->
+    {% if websocket_connected %}
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold">Subscribed Symbols</h6>
+                </div>
+                <div class="card-body">
+                    {% if subscribed_symbols %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Exchange Type</th>
+                                    <th>Token</th>
+                                    <th>Data Points</th>
+                                    <th>Active Callbacks</th>
+                                </tr>
+                            </thead>
+                            <tbody id="symbols-table-body">
+                                {% for symbol in subscribed_symbols %}
+                                <tr>
+                                    <td>{{ symbol.symbol }}</td>
+                                    <td>{{ symbol.exchange_type }}</td>
+                                    <td>{{ symbol.token }}</td>
+                                    <td>{{ symbol.data_points }}</td>
+                                    <td>{{ symbol.callbacks }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info" id="no-symbols-message">
+                        <i class="fas fa-info-circle me-2"></i> No symbols are currently subscribed. Symbols will be automatically subscribed when strategy instances are activated.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Connect Modal -->
+<div class="modal fade" id="connectModal" tabindex="-1" aria-labelledby="connectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="connectModalLabel">Connect to AngelOne WebSocket</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('admin.websocket_connect') }}" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="admin_id" class="form-label">Select Admin User With AngelOne API</label>
+                        <select class="form-select" id="admin_id" name="admin_id" required>
+                            <option value="">Select Admin User</option>
+                            {% for admin in admins_with_angel %}
+                            <option value="{{ admin.id }}">{{ admin.username }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if not admins_with_angel %}
+                        <div class="form-text text-warning">
+                            No admin users have AngelOne API credentials configured. 
+                            <a href="{{ url_for('admin.users') }}">Configure an admin user</a> first.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success" {% if not admins_with_angel %}disabled{% endif %}>
+                        <i class="fas fa-plug me-1"></i> Connect
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Refresh status button
+    const refreshBtn = document.getElementById('refreshStatus');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+            refreshConnectionStatus();
+        });
+    }
+    
+    // Auto-refresh status every 30 seconds
+    setInterval(refreshConnectionStatus, 30000);
+    
+    function refreshConnectionStatus() {
+        fetch('{{ url_for("admin.websocket_status") }}')
+            .then(response => response.json())
+            .then(data => {
+                // Update connection status
+                const statusEl = document.getElementById('connection-status');
+                if (statusEl) {
+                    if (data.connected) {
+                        statusEl.textContent = 'Connected';
+                        statusEl.className = 'text-success';
+                    } else {
+                        statusEl.textContent = 'Disconnected';
+                        statusEl.className = 'text-danger';
+                    }
+                }
+                
+                // Update details
+                const detailsEl = document.getElementById('connection-details');
+                if (detailsEl) {
+                    if (data.connected) {
+                        detailsEl.textContent = 'WebSocket connection to AngelOne is active and receiving real-time data.';
+                    } else {
+                        detailsEl.textContent = 'WebSocket is not connected. Connect to receive real-time data.';
+                    }
+                }
+                
+                // Update detailed status if available
+                updateDetailedStatus(data);
+            })
+            .catch(error => {
+                console.error('Error fetching status:', error);
+            });
+    }
+    
+    function updateDetailedStatus(data) {
+        const lastDataTimeEl = document.getElementById('last-data-time');
+        const subscribedCountEl = document.getElementById('subscribed-symbols-count');
+        const reconnectAttemptsEl = document.getElementById('reconnect-attempts');
+        const lastErrorEl = document.getElementById('last-error');
+        
+        if (lastDataTimeEl) lastDataTimeEl.textContent = data.last_data_time || 'None';
+        if (subscribedCountEl) subscribedCountEl.textContent = data.subscribed_symbols_count;
+        if (reconnectAttemptsEl) reconnectAttemptsEl.textContent = data.reconnect_attempts;
+        
+        if (lastErrorEl) {
+            lastErrorEl.textContent = data.last_error || 'None';
+            lastErrorEl.className = data.last_error ? 'text-danger' : '';
+        }
+    }
+});
+</script>
+{% endblock %}
