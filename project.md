@@ -13,6 +13,7 @@ AlgoTrade is a web-based algorithmic trading platform that allows users to creat
 - **Trading Account Integration**: Connect to trading accounts via OpenAlgo API
 - **Signal Generation**: Support for various trading signals (long entry/exit, short entry/exit)
 - **Responsive Design**: Modern UI with sidebar navigation for desktop and mobile
+- **Admin Panel**: Administrative interface for user, strategy, and instance management
 
 ### Technology Stack
 
@@ -31,6 +32,7 @@ AlgoTrade is a web-based algorithmic trading platform that allows users to creat
 algotrade/
 ├── app/                      # Main application package
 │   ├── controllers/          # Route controllers
+│   │   ├── admin.py          # Admin routes
 │   │   ├── auth.py           # Authentication routes
 │   │   ├── dashboard.py      # Dashboard and account routes
 │   │   └── strategy.py       # Strategy management routes
@@ -53,6 +55,11 @@ algotrade/
 │   │   └── js/
 │   │       └── main.js       # Custom JavaScript
 │   ├── templates/            # Jinja2 templates
+│   │   ├── admin/            # Admin templates
+│   │   │   ├── index.html
+│   │   │   ├── users.html
+│   │   │   ├── strategies.html
+│   │   │   └── instances.html
 │   │   ├── auth/             # Authentication templates
 │   │   │   ├── login.html
 │   │   │   ├── profile.html
@@ -93,6 +100,7 @@ The User model handles user authentication and API configuration:
   - `username`: Unique username
   - `email`: Unique email address
   - `password_hash`: Hashed password using bcrypt
+  - `is_admin`: Boolean flag for administrator privileges
   - `openalgo_api_key`: API key for OpenAlgo
   - `openalgo_host_url`: OpenAlgo server URL
   - `created_at` and `updated_at`: Timestamps
@@ -171,6 +179,16 @@ Manages strategy and instance creation, editing, and deployment:
 - `/instances/<id>/delete`: Delete instance
 - `/instances/<id>/toggle`: Activate/deactivate instance
 
+#### Admin Controller (`app/controllers/admin.py`)
+
+Manages administrator interface and user management:
+
+- `/admin`: Main admin dashboard with summary statistics
+- `/admin/users`: User management interface
+- `/admin/users/<id>/toggle_admin`: Toggle admin privileges for users
+- `/admin/strategies`: View all strategies across users
+- `/admin/instances`: View all strategy instances across users
+
 ### Helper Functions
 
 #### OpenAlgo Helpers (`app/helpers/openalgo_helper.py`)
@@ -227,6 +245,15 @@ Templates for user authentication:
 - `register.html`: Registration form
 - `profile.html`: User profile form
 
+#### Admin Templates (`app/templates/admin/`)
+
+Templates for the admin dashboard and management interfaces:
+
+- `index.html`: Admin dashboard with summary statistics
+- `users.html`: User management interface
+- `strategies.html`: Strategy management overview
+- `instances.html`: Instance management overview
+
 ### CSS & JavaScript
 
 #### Custom CSS (`app/static/css/style.css`)
@@ -282,6 +309,13 @@ JavaScript functionality:
 3. OpenAlgo executes the configured action (e.g., buy/sell)
 4. Results are reflected in the trading account
 
+### Admin Management Flow
+
+1. Users with admin privileges can access the admin dashboard
+2. Admins can view all users, strategies, and instances in the system
+3. Admins can grant or revoke admin privileges for other users
+4. Admins can monitor system activity and performance
+
 ## Extension Points
 
 ### Adding New Strategy Types
@@ -316,6 +350,15 @@ To support multiple brokers:
 2. Add broker selection to the user profile
 3. Update the instance configuration to support broker-specific settings
 
+### Error Handling and Robustness
+
+The platform includes robust error handling for API interactions:
+
+1. All API responses are validated for expected structure
+2. Type checking ensures compatibility with templates
+3. Graceful fallbacks provide usable information even with unexpected data formats
+4. User feedback through flash messages gives clear error information
+
 ## Database Schema
 
 ### Users Table
@@ -326,6 +369,7 @@ CREATE TABLE user (
     username VARCHAR(20) UNIQUE NOT NULL,
     email VARCHAR(120) UNIQUE NOT NULL,
     password_hash VARCHAR(60) NOT NULL,
+    is_admin BOOLEAN NOT NULL DEFAULT 0,
     openalgo_api_key VARCHAR(100),
     openalgo_host_url VARCHAR(255) DEFAULT "http://127.0.0.1:5000",
     created_at DATETIME NOT NULL,
@@ -406,12 +450,18 @@ CREATE TABLE strategy_instance (
    python init_db.py
    ```
 
-5. Run the application:
+5. (Optional) Apply migrations if updating an existing installation:
+   ```bash
+   flask db migrate -m "Description of changes"
+   flask db upgrade
+   ```
+
+6. Run the application:
    ```bash
    python app.py
    ```
 
-6. Access the application at `http://localhost:5000`
+7. Access the application at `http://localhost:5000`
 
 ### Default Credentials
 
