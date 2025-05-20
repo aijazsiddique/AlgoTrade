@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, url_for, flash, redirect, request
+from flask import Blueprint, render_template, url_for, flash, redirect, request, session
 from flask_login import login_user, current_user, logout_user, login_required
 from app import db
 from app.models.user import User
@@ -59,6 +59,8 @@ def profile():
             current_user.set_password(form.password.data)
             
         db.session.commit()
+        remember_me = session.get('_remember', False)
+        login_user(current_user, remember=remember_me)
         flash('Your profile has been updated!', 'success')
         return redirect(url_for('auth.profile'))
     
